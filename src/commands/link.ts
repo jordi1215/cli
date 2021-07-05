@@ -1,8 +1,7 @@
 import { Command, flags } from '@oclif/command'
-import Configstore from 'configstore'
+// import Configstore from 'configstore'
 //import Configstore = require('configstore')
 
-const config = new Configstore("package", { foo: 'bar' });
 // let index: number = 0
 export default class Link extends Command {
     static description = 'The link command facilitates the wml link'
@@ -18,24 +17,29 @@ export default class Link extends Command {
         // // flag with no value (-f, --force)
         // force: flags.boolean({ char: 'f' }),
         verbose: flags.boolean({ char: 'v' }),
+        packages: flags.boolean({ char: 'p' }),
     }
 
     static args = [{ name: 'file' }]
     static source: string
-    index: number = 0
 
     async run() {
-        this.index = this.index + 1
 
-        const { args } = this.parse(Link)
+        const { args, flags } = this.parse(Link)
 
         if (!args.file) {
             Link.source = process.cwd()
             this.log(`added ${Link.source} as the source`)
-            //const config = new Configstore('hello', { foo: 'bar' });
+            // const config = new Configstore("cli", { source: Link.source });
         }
         else {
-            this.log(`source: ${Link.source}`)
+            // this.log(`source: ${config.get('source')}`)
+        }
+
+        if (args.file && flags.packages) {
+            // index number = config.size - 1
+            // 
+
         }
         // const name = flags.name ?? 'world'
         // this.log(`hello ${name} from ./src/commands/hello.ts`)
