@@ -1,67 +1,77 @@
 import { Command, flags } from '@oclif/command'
-// import Configstore from 'configstore'
-//import Configstore = require('configstore')
+import { LocalStorage } from 'node-localstorage'
+
+function run_command(command: string) {
+  const { exec } = require("child_process")
+  exec(command, (error: { message: any }, stdout: any, stderr: any) => {
+    if (error) {
+      console.log(`error: ${error.message}`)
+      return
+    }
+    if (stderr) {
+      console.log(`stderr: ${stderr}`)
+      return
+    }
+    console.log(`stdout: ${stdout}`)
+  })
+}
 
 // let index: number = 0
 export default class Link extends Command {
-    static description = 'The link command facilitates the wml link'
+  private storage: LocalStorage = new LocalStorage('~/.config/faststore.confg')
 
-    static examples = [
-        `$ cli link`,
-    ]
+  public static description = 'The link command facilitates the wml link'
 
-    static flags = {
-        help: flags.help({ char: 'h' }),
-        // flag with a value (-n, --name=VALUE)
-        // name: flags.string({ char: 'n', description: 'name to print' }),
-        // // flag with no value (-f, --force)
-        // force: flags.boolean({ char: 'f' }),
-        verbose: flags.boolean({ char: 'v' }),
-        packages: flags.boolean({ char: 'p' }),
+  public static examples = [`$ cli link`]
+
+  public static flags = {
+    help: flags.help({ char: 'h' }),
+    // flag with a value (-n, --name=VALUE)
+    // name: flags.string({ char: 'n', description: 'name to print' }),
+    // // flag with no value (-f, --force)
+    // force: flags.boolean({ char: 'f' }),
+    verbose: flags.boolean({ char: 'v' }),
+    packages: flags.boolean({ char: 'p', description: 'set this flag to add destination path' }),
+  }
+
+  public static args = [{ name: 'file' }]
+  public static source: string
+
+  public async run() {
+
+
+    const { args, flags } = this.parse(Link)
+
+    // set the source path
+    if (!args.file && !flags.packages) {
+      Link.source = process.cwd()
+      this.log(`added ${Link.source} as the source`)
+      this.storage.setItem('source', Link.source)
     }
 
-    static args = [{ name: 'file' }]
-    static source: string
-
-    async run() {
-
-        const { args, flags } = this.parse(Link)
-
-        if (!args.file) {
-            Link.source = process.cwd()
-            this.log(`added ${Link.source} as the source`)
-            // const config = new Configstore("cli", { source: Link.source });
-        }
-        else {
-            // this.log(`source: ${config.get('source')}`)
-        }
-
-        if (args.file && flags.packages) {
-            // index number = config.size - 1
-            // 
-
-        }
-        // const name = flags.name ?? 'world'
-        // this.log(`hello ${name} from ./src/commands/hello.ts`)
-        // if (args.file && flags.force) {
-        //     this.log(`you input --force and --file: ${args.file}`)
-        // }
-        // const { exec } = require("child_process")
-
-
-
-        // let my_var: string = "help";
-
-        // exec(`wml --${my_var}`, (error: { message: any }, stdout: any, stderr: any) => {
-        //     if (error) {
-        //         console.log(`error: ${error.message}`)
-        //         return
-        //     }
-        //     if (stderr) {
-        //         console.log(`stderr: ${stderr}`)
-        //         return
-        //     }
-        //     console.log(`stdout: ${stdout}`)
-        // })
+    // add the paths
+    if (args.file && flags.packages) {
+      this.storage.setItem(`path${this.storage.length}`, args.file)
     }
+
+    if (args.file == 'start') {
+      let command: string = ''
+
+      // add all the path
+      for (let i = 0; i < this.storage.length - 1; i++) {
+        command = 'wml add '
+        command += this.storage.getItem('source')
+        command += ' '
+        command += this.storage.getItem(`path${i + 1}`)
+        this.log(command)
+        run_command(command)
+      }
+
+      run_command('wml start')
+
+
+    }
+
+
+  }
 }
