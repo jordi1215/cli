@@ -20,9 +20,7 @@ function run_command(command: string) {
 
 // let index: number = 0
 export default class Link extends Command {
-  private storage: LocalStorage = new LocalStorage(__dirname + '/.config/faststore.confg')
-
-  private name_dict: LocalStorage = new LocalStorage(__dirname + '/.config/name_dict.confg')
+  private storage: LocalStorage = new LocalStorage(__dirname + '/.config')
 
   public static description = 'The link command facilitates the wml link'
 
@@ -46,9 +44,7 @@ export default class Link extends Command {
 
     // set the source path
     if (!args.file && !flags.packages) {
-      //TODO: clear both storages
       this.storage.clear()
-      this.name_dict.clear()
       let source: string = process.cwd()
 
       // get all module folders inside the packages folder
@@ -66,51 +62,67 @@ export default class Link extends Command {
         this.log('Found the following packages: ')
       }
       // get all the packages name
+      let packages: { [key: string]: any } = {}
       for (let i = 0; i < folders.length; i++) {
         let package_path: string = source + '/packages/' + folders[i]
         let full_path: string = package_path + '/package.json'
         let raw_data = fs.readFileSync(full_path)
         let my_json = JSON.parse(raw_data)
-        let name = my_json['name']
+        let name: string = my_json['name']
         if (flags.verbose) {
           this.log(name)
         }
-        this.name_dict.setItem(name, package_path)
+        packages[name] = package_path
       }
+      let json: { [key: string]: any } = {}
+      json['packages'] = packages
+      json['module_paths'] = {}
+      this.storage.setItem('cli.config.json', JSON.stringify(json))
     }
 
     // add the paths
     if (args.file && flags.packages) {
       let module_path: any = ""
-      if (args.file.charAt(0) == '@') {
-        module_path = this.name_dict.getItem(args.file)
+      let retrievedObject = this.storage.getItem('cli.config.json')
+      if (retrievedObject != null) {
+        let config_json = JSON.parse(retrievedObject)
+        if (args.file.charAt(0) == '@') {
+          module_path = config_json['packages'][args.file]
+        }
+
+        else {
+          module_path = args.file
+        }
+        let module_paths = config_json['module_paths']
+        module_paths[`path_${Object.keys(module_paths).length + 1}`] = module_path
+        config_json['module_paths'] = module_paths
+        this.storage.setItem('cli.config.json', JSON.stringify(config_json))
       }
-      else {
-        module_path = args.file
-      }
-      this.storage.setItem(`path${this.storage.length + 1}`, module_path)
     }
 
     // the start command
     if (args.file == 'start') {
       let command: string = ''
-
-      // add all the path
-      for (let i = 0; i < this.storage.length; i++) {
-        command = 'wml add '
-        command += this.storage.getItem(`path${i + 1}`)
-        command += ' '
-        command += process.cwd()
-        this.log(command)
-        //run_command(command)
+      let retrievedObject = this.storage.getItem('cli.config.json')
+      if (retrievedObject != null) {
+        let config_json = JSON.parse(retrievedObject)
+        let module_paths = config_json['module_paths']
+        // add all the path
+        for (let i = 0; i < Object.keys(module_paths).length; i++) {
+          command = 'wml add '
+          command += module_paths[`path_${i + 1}`]
+          command += ' '
+          command += process.cwd()
+          this.log(command)
+          //run_command(command)
+        }
+        this.log('wml start')
+        //run_command('wml start')
       }
-      this.log('wml start')
-      //run_command('wml start')
     }
 
     if (args.file == 'clear') {
       this.storage.clear()
-      this.name_dict.clear()
     }
   }
 }
