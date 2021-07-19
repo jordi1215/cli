@@ -3,5 +3,6 @@
         "faststore",
         "localstorage",
         "oclif"
-    ]
+    ],
+    "python.formatting.provider": "black"
 }

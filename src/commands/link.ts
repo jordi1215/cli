@@ -30,8 +30,6 @@ export default class Link extends Command {
 
   public static flags = {
     help: flags.help({ char: 'h' }),
-    // flag with a value (-n, --name=VALUE)
-    // name: flags.string({ char: 'n', description: 'name to print' }),
     // // flag with no value (-f, --force)
     // force: flags.boolean({ char: 'f' }),
     verbose: flags.boolean({ char: 'v' }),
@@ -48,12 +46,10 @@ export default class Link extends Command {
 
     // set the source path
     if (!args.file && !flags.packages) {
+      //TODO: clear both storages
+      this.storage.clear()
+      this.name_dict.clear()
       let source: string = process.cwd()
-
-      //Link.source = process.cwd()
-      //this.log(`added ${Link.source} as the source`)
-      //this.storage.setItem('source', Link.source)
-
 
       // get all module folders inside the packages folder
       const folderName = 'packages'
@@ -61,14 +57,14 @@ export default class Link extends Command {
 
       if (fs.existsSync(folderName)) {
         folders = fs.readdirSync(folderName)
-        // for (let data of folders) {
-        //   console.log(data)
-        // }
       }
       else {
         this.log("Error: No folder names 'packages' found")
       }
 
+      if (flags.verbose) {
+        this.log('Found the following packages: ')
+      }
       // get all the packages name
       for (let i = 0; i < folders.length; i++) {
         let package_path: string = source + '/packages/' + folders[i]
@@ -76,10 +72,10 @@ export default class Link extends Command {
         let raw_data = fs.readFileSync(full_path)
         let my_json = JSON.parse(raw_data)
         let name = my_json['name']
+        if (flags.verbose) {
+          this.log(name)
+        }
         this.name_dict.setItem(name, package_path)
-
-        //console.log(name)
-        //console.log(this.name_dict.getItem(my_json['name']))
       }
     }
 
@@ -102,19 +98,19 @@ export default class Link extends Command {
       // add all the path
       for (let i = 0; i < this.storage.length; i++) {
         command = 'wml add '
-        //command += this.storage.getItem('source')
         command += this.storage.getItem(`path${i + 1}`)
         command += ' '
         command += process.cwd()
         this.log(command)
         //run_command(command)
       }
-
+      this.log('wml start')
       //run_command('wml start')
-
-
     }
 
-
+    if (args.file == 'clear') {
+      this.storage.clear()
+      this.name_dict.clear()
+    }
   }
 }
