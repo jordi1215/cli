@@ -2,20 +2,24 @@ import { Command, flags } from '@oclif/command'
 import { LocalStorage } from 'node-localstorage'
 
 const fs = require('fs')
+const chokidar = require('chokidar')
+const fse = require('fs-extra')
 
-function run_command(command: string) {
-  const { exec } = require("child_process")
-  exec(command, (error: { message: any }, stdout: any, stderr: any) => {
-    if (error) {
-      console.log(`error: ${error.message}`)
-      return
+// This function returns the path after the package folder from the source directory
+function get_path(path: string) {
+  const nodes_Dir = process.cwd() + '/node_modules'
+  var string = path.split("/")
+  var res = ''
+  var flag = false
+  for (let i = 0; i < string.length; i++) {
+    if (string[i] == 'packages') {
+      flag = true
     }
-    if (stderr) {
-      console.log(`stderr: ${stderr}`)
-      return
+    else if (flag) {
+      res += '/' + string[i]
     }
-    console.log(`stdout: ${stdout}`)
-  })
+  }
+  return nodes_Dir + res
 }
 
 // let index: number = 0
@@ -107,17 +111,41 @@ export default class Link extends Command {
       if (retrievedObject != null) {
         let config_json = JSON.parse(retrievedObject)
         let module_paths = config_json['module_paths']
+        let dirs: string[] = []
         // add all the path
         for (let i = 0; i < Object.keys(module_paths).length; i++) {
-          command = 'wml add '
-          command += module_paths[`path_${i + 1}`]
-          command += ' '
-          command += process.cwd()
-          this.log(command)
-          //run_command(command)
+          const srcDir = module_paths[`path_${i + 1}`];
+          var string = srcDir.split("/")
+          const destDir = process.cwd() + '/node_modules/@vtex/' + string[string.length - 1]
+
+          dirs.push(srcDir)
+          // To copy a folder or file  
+          // fse.copySync(srcDir, destDir, { overwrite: true }, function (err: any) {
+          //   if (err) {
+          //     console.error(err)
+          //   } else {
+          //     console.log("success!")
+          //   }
+          // })
+
         }
-        this.log('wml start')
-        //run_command('wml start')
+
+        chokidar.watch(dirs).on('addDir', (path: any) => {
+          var dest_dir = get_path(path)
+          //console.log(path)
+
+          fs.mkdir(dest_dir, (err: any) => {
+            if (err) throw err;
+            //console.log("Directory is created.");
+          });
+
+        }).on('add', (path: any) => {
+          var dest_dir = get_path(path)
+          fs.copyFile(path, dest_dir, (err: any) => {
+            if (err) throw err;
+            // console.log('source.txt was copied to destination.txt');
+          })
+        })
       }
     }
 
