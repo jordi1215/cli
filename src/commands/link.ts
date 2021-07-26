@@ -135,16 +135,37 @@ export default class Link extends Command {
           //console.log(path)
 
           fs.mkdir(dest_dir, (err: any) => {
-            if (err) throw err;
+            if (err) throw err
             //console.log("Directory is created.");
-          });
+          })
 
         }).on('add', (path: any) => {
           var dest_dir = get_path(path)
           fs.copyFile(path, dest_dir, (err: any) => {
-            if (err) throw err;
+            if (err) throw err
+            console.log('added ' + path)
+            console.log('destination: ' + dest_dir)
+
+          })
+        }).on('change', (path: any) => {
+          var dest_dir = get_path(path)
+          fs.copyFile(path, dest_dir, (err: any) => {
+            if (err) throw err
             // console.log('source.txt was copied to destination.txt');
           })
+        }).on('unlink', (path: any) => {
+          var dest_dir = get_path(path)
+          fs.unlink(dest_dir, (err: any) => {
+            if (err) throw err
+          })
+
+        }).on('unlinkDir', (path: any) => {
+          var dest_dir = get_path(path)
+          fs.rmdir(dest_dir, { recursive: true }, (err: any) => {
+            if (err) throw err
+          })
+        }).on('error', (error: any) => {
+          console.error('Error happened', error)
         })
       }
     }
