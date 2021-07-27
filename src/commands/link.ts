@@ -7,7 +7,7 @@ const fse = require('fs-extra')
 
 // This function returns the path after the package folder from the source directory
 function get_path(path: string) {
-  const nodes_Dir = process.cwd() + '/node_modules'
+  const nodes_Dir = process.cwd() + '/node_modules/@vtex'
   var string = path.split("/")
   var res = ''
   var flag = false
@@ -112,29 +112,28 @@ export default class Link extends Command {
         let config_json = JSON.parse(retrievedObject)
         let module_paths = config_json['module_paths']
         let dirs: string[] = []
-        // add all the path
+        // add all the path that need to be watched
         for (let i = 0; i < Object.keys(module_paths).length; i++) {
           const srcDir = module_paths[`path_${i + 1}`];
           var string = srcDir.split("/")
-          const destDir = process.cwd() + '/node_modules/@vtex/' + string[string.length - 1]
-
           dirs.push(srcDir)
-          // To copy a folder or file  
-          // fse.copySync(srcDir, destDir, { overwrite: true }, function (err: any) {
-          //   if (err) {
-          //     console.error(err)
-          //   } else {
-          //     console.log("success!")
-          //   }
-          // })
-
         }
+
+        // let working_folder = process.cwd() + '/node_modules/@vtex'
+        // fs.mkdir(working_folder, { recursive: true }, (err: any) => {
+        //   if (err) throw err
+        // })
+        // if (!fs.existsSync(working_folder)) {
+        //   fs.mkdirSync(working_folder)
+        // }
+        // working_folder = process.cwd() + '/node_modules/@vtex'
+        // if (!fs.existsSync(working_folder)) {
+        //   fs.mkdirSync(working_folder)
+        // }
 
         chokidar.watch(dirs).on('addDir', (path: any) => {
           var dest_dir = get_path(path)
-          //console.log(path)
-
-          fs.mkdir(dest_dir, (err: any) => {
+          fs.mkdirSync(dest_dir, { recursive: true }, (err: any) => {
             if (err) throw err
             //console.log("Directory is created.");
           })
