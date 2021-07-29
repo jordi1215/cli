@@ -28,6 +28,8 @@ export default class Link extends Command {
 
   public static examples = [`$ cli link`]
 
+  public static usage = '\nlink\t set the current directory as source directory\nlink -p <foo>  add packages from the source directory to be linked\nlink start\t link watch and copy the selected packages to the current directory\n'
+
   public static flags = {
     help: flags.help({ char: 'h' }),
     // force: flags.boolean({ char: 'f' }),
