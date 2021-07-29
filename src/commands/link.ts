@@ -21,7 +21,6 @@ function get_path(path: string) {
   return nodes_Dir + res
 }
 
-// let index: number = 0
 export default class Link extends Command {
   private storage: LocalStorage = new LocalStorage(__dirname + '/.config')
 
@@ -31,30 +30,21 @@ export default class Link extends Command {
 
   public static flags = {
     help: flags.help({ char: 'h' }),
-    // // flag with no value (-f, --force)
     // force: flags.boolean({ char: 'f' }),
     verbose: flags.boolean({ char: 'v' }),
     packages: flags.boolean({ char: 'p', description: 'set this flag to add destination path' }),
+    list: flags.boolean({ char: 'l', description: 'list all of the packages added' })
   }
 
   public static args = [{ name: 'file' }]
 
-  //private static verbose_flag = false
-
-  private static dirs: string[] = []
-  // to be called after interrupt is detected
-  public clean() {
-
-  }
   public async run() {
 
 
     const { args, flags } = this.parse(Link)
 
-    //Link.verbose_flag = flags.verbose
-
     // set the source path
-    if (!args.file && !flags.packages) {
+    if (!args.file && !flags.packages && !flags.list) {
       this.storage.clear()
       let source: string = process.cwd()
 
@@ -74,6 +64,8 @@ export default class Link extends Command {
       // get all the packages name
       let packages: { [key: string]: any } = {}
       for (let i = 0; i < folders.length; i++) {
+        console.log(folders[i][0])
+        if (folders[i][0] == '.') continue
         let package_path: string = source + '/packages/' + folders[i]
         let full_path: string = package_path + '/package.json'
         let raw_data = fs.readFileSync(full_path)
@@ -121,10 +113,8 @@ export default class Link extends Command {
         // add all the path that need to be watched
         for (let i = 0; i < Object.keys(module_paths).length; i++) {
           const srcDir = module_paths[`path_${i + 1}`];
-          var string = srcDir.split("/")
           dirs.push(srcDir)
         }
-        // Link.dirs = dirs
 
         chokidar.watch(dirs).on('addDir', (path: any) => {
           var dest_dir = get_path(path)
@@ -187,6 +177,22 @@ export default class Link extends Command {
           }
           process.exit()
         })
+      }
+    }
+    //list all the package names
+    if (flags.list) {
+      let retrievedObject = this.storage.getItem('cli.config.json')
+      if (retrievedObject != null) {
+        let config_json = JSON.parse(retrievedObject)
+        let packages = config_json['packages']
+        if (Object.keys(packages).length == 0) {
+          this.log('no packages found')
+        }
+        for (let i in packages) {
+          console.log(i)
+        }
+      } else {
+        this.log('no packages found')
       }
     }
 
