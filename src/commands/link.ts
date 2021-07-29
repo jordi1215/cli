@@ -3,7 +3,6 @@ import { LocalStorage } from 'node-localstorage'
 
 const fs = require('fs')
 const chokidar = require('chokidar')
-const fse = require('fs-extra')
 
 // This function returns the path after the package folder from the source directory
 function get_path(path: string) {
@@ -39,12 +38,20 @@ export default class Link extends Command {
   }
 
   public static args = [{ name: 'file' }]
-  //public static source: string
 
+  //private static verbose_flag = false
+
+  private static dirs: string[] = []
+  // to be called after interrupt is detected
+  public clean() {
+
+  }
   public async run() {
 
 
     const { args, flags } = this.parse(Link)
+
+    //Link.verbose_flag = flags.verbose
 
     // set the source path
     if (!args.file && !flags.packages) {
@@ -62,9 +69,8 @@ export default class Link extends Command {
         this.log("Error: No folder names 'packages' found")
       }
 
-      if (flags.verbose) {
-        this.log('Found the following packages: ')
-      }
+      if (flags.verbose) this.log('Found the following packages: ')
+
       // get all the packages name
       let packages: { [key: string]: any } = {}
       for (let i = 0; i < folders.length; i++) {
@@ -118,53 +124,68 @@ export default class Link extends Command {
           var string = srcDir.split("/")
           dirs.push(srcDir)
         }
-
-        // let working_folder = process.cwd() + '/node_modules/@vtex'
-        // fs.mkdir(working_folder, { recursive: true }, (err: any) => {
-        //   if (err) throw err
-        // })
-        // if (!fs.existsSync(working_folder)) {
-        //   fs.mkdirSync(working_folder)
-        // }
-        // working_folder = process.cwd() + '/node_modules/@vtex'
-        // if (!fs.existsSync(working_folder)) {
-        //   fs.mkdirSync(working_folder)
-        // }
+        // Link.dirs = dirs
 
         chokidar.watch(dirs).on('addDir', (path: any) => {
           var dest_dir = get_path(path)
           fs.mkdirSync(dest_dir, { recursive: true }, (err: any) => {
             if (err) throw err
-            //console.log("Directory is created.");
+            if (flags.verbose) this.log('folder created: ' + dest_dir)
           })
 
         }).on('add', (path: any) => {
           var dest_dir = get_path(path)
           fs.copyFile(path, dest_dir, (err: any) => {
             if (err) throw err
-            console.log('added ' + path)
-            console.log('destination: ' + dest_dir)
+            if (flags.verbose) this.log('copied ' + path + 'to destination: ' + dest_dir)
 
           })
         }).on('change', (path: any) => {
           var dest_dir = get_path(path)
           fs.copyFile(path, dest_dir, (err: any) => {
             if (err) throw err
-            // console.log('source.txt was copied to destination.txt');
+            if (flags.verbose) this.log('copied ' + path + 'to destination: ' + dest_dir)
           })
         }).on('unlink', (path: any) => {
           var dest_dir = get_path(path)
           fs.unlink(dest_dir, (err: any) => {
             if (err) throw err
+            if (flags.verbose) this.log('file deleted: ' + dest_dir)
           })
 
         }).on('unlinkDir', (path: any) => {
           var dest_dir = get_path(path)
           fs.rmdir(dest_dir, { recursive: true }, (err: any) => {
             if (err) throw err
+            if (flags.verbose) this.log('folder deleted: ' + dest_dir)
           })
         }).on('error', (error: any) => {
-          console.error('Error happened', error)
+          this.error('Error happened', error)
+        })
+
+
+        process.on('SIGINT', function () {
+          console.log('Exit with ctrl + c')
+          console.log(`${dirs.length}`)
+          for (let i = 0; i < dirs.length; i++) {
+            var dest_dir = get_path(dirs[i])
+            fs.rmdirSync(dest_dir, { recursive: true }, (err: any) => {
+              if (err) throw err
+              if (flags.verbose) console.log('directory deleted: ' + dirs[i])
+            })
+          }
+          process.exit()
+        })
+        process.on('SIGTSTP', function () {
+          console.log('Exit with ctrl + z')
+          for (let i = 0; i < dirs.length; i++) {
+            var dest_dir = get_path(dirs[i])
+            fs.rmdirSync(dest_dir, { recursive: true }, (err: any) => {
+              if (err) throw err
+              if (flags.verbose) console.log('directory deleted: ' + dirs[i])
+            })
+          }
+          process.exit()
         })
       }
     }
@@ -172,5 +193,12 @@ export default class Link extends Command {
     if (args.file == 'clear') {
       this.storage.clear()
     }
+
   }
+
+
 }
+
+
+
+
