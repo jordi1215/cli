@@ -66,7 +66,6 @@ export default class Link extends Command {
       // get all the packages name
       let packages: { [key: string]: any } = {}
       for (let i = 0; i < folders.length; i++) {
-        console.log(folders[i][0])
         if (folders[i][0] == '.') continue
         let package_path: string = source + '/packages/' + folders[i]
         let full_path: string = package_path + '/package.json'
