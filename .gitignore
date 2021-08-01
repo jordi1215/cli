@@ -6,4 +6,4 @@
 /package-lock.json
 /tmp
 node_modules
-/commands/.config
+/commands/.config/cli.config.json
